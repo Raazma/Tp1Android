@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -17,7 +18,8 @@ import java.net.SocketAddress;
 import static java.net.InetAddress.*;
 
 public class MainActivity extends AppCompatActivity {
-
+    String adresse = "206.167.212";
+    ProgressBar theBar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        theBar = (ProgressBar)findViewById(R.id.barre);
         return true;
     }
 
@@ -53,39 +56,45 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-    private  class ZeBigCalcul extends AsyncTask<Void, String , Void> {
+    private  class ZeBigCalcul extends AsyncTask<Void, Integer , Void> {
 
 
-        Socket socket = new Socket();
-        String adresse = "206.167.212";
-        @Override
-        protected Void doInBackground(Void... params) {
+        Socket socket = null;
 
-            for (int i = 75; i < 150; i++) {
-                try {
-                    publishProgress(adresse + "." +i);
+            @Override
+            protected Void doInBackground(Void... params) {
 
-                    socket.connect(new InetSocketAddress((adresse + "." + i).toString(), 80), 5000);
+                for (int i = 0; i < 150; i++) {
+                    try {
+                        // publishProgress(adresse + "." +i);
+                         socket = new Socket();
+                        socket.connect(new InetSocketAddress((adresse + "." + i).toString(), 80), 500);
 
-                    publishProgress(adresse + "." + i);
+                        publishProgress(i);
 
-                } catch (IOException e) {
-                    publishProgress(e.toString());
+                    } catch (IOException e) {
 
+                        publishProgress(i);
+                    }
+                   finally{
+                        try {
+                            socket.close();
+                        }
+                        catch (IOException e){}
+
+                    }
                 }
 
-            }
-            try {
-                socket.close();
-            }
-            catch (IOException e){}
             return null;
         }
 
         @Override
-        protected void onProgressUpdate(String...values)
+        protected void onProgressUpdate(Integer...values)
         {
-            ( (TextView)findViewById(R.id.adresseView)).setText(values[0]);
+
+            ( (TextView)findViewById(R.id.adresseView)).append(adresse +"." + values[0] +"\r");
+
+            theBar.setProgress((values[0] * 100) / 150 );
         }
         @Override
         protected void onPostExecute(Void Result)
