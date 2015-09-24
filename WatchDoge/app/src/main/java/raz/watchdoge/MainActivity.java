@@ -6,8 +6,10 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -19,6 +21,11 @@ import static java.net.InetAddress.*;
 
 public class MainActivity extends AppCompatActivity {
     String adresse = "206.167.212";
+    int Dplage;
+    int Fplage;
+    int port;
+    boolean isSuspended = false;
+    boolean isStarted = false;
     ProgressBar theBar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,37 +58,82 @@ public class MainActivity extends AppCompatActivity {
 
   public  void Start (View v)
     {
-        ZeBigCalcul z = new ZeBigCalcul();
-        z.execute();
+        isSuspended = false;
 
+        if(!isStarted && isValid()) {
+            isStarted = true;
+            ((TextView) findViewById(R.id.adresseView)).setText("");
+            adresse = ((EditText) findViewById(R.id.sousReseau)).getText().toString();
+            Dplage = Integer.parseInt(((EditText) findViewById(R.id.Dplage)).getText().toString());
+            Fplage = Integer.parseInt(((EditText) findViewById(R.id.Fplage)).getText().toString());
+            port = Integer.parseInt(((EditText) findViewById(R.id.Nport)).getText().toString());
+            ZeBigCalcul z = new ZeBigCalcul();
+            z.execute();
+        }
+
+
+    }
+    public void Suspendre(View v)
+    {
+
+      isSuspended = true;
+
+
+    }
+    private boolean isValid()
+    {
+        boolean verif = false;
+        try {
+            Integer.parseInt(((EditText) findViewById(R.id.Nport)).getText().toString());
+            if(Integer.parseInt(((EditText) findViewById(R.id.Dplage)).getText().toString()) < Integer.parseInt(((EditText) findViewById(R.id.Fplage)).getText().toString()) && !(((EditText) findViewById(R.id.sousReseau)).getText().toString()).trim().isEmpty()&& !(((EditText) findViewById(R.id.Nport)).getText().toString()).trim().isEmpty() )
+                verif = true;
+            else
+                Toast.makeText(this, "Invalide plage ou Sous Reseau!",Toast.LENGTH_LONG).show();
+
+        }
+         catch (NumberFormatException e){
+         Toast.makeText(this, "Invalide plage de Réseau ou Invalide port !",Toast.LENGTH_LONG).show();
+
+        }
+
+        return verif;
 
     }
     private  class ZeBigCalcul extends AsyncTask<Void, Integer , Void> {
 
 
         Socket socket = null;
+      public  ZeBigCalcul()
+        {
 
+
+
+        }
             @Override
             protected Void doInBackground(Void... params) {
 
-                for (int i = 0; i < 150; i++) {
+                for (int i = Dplage; i <= Fplage; i++) {
                     try {
-                        // publishProgress(adresse + "." +i);
-                         socket = new Socket();
-                        socket.connect(new InetSocketAddress((adresse + "." + i).toString(), 80), 500);
+
+                        while(isSuspended)
+                            Thread.sleep(500);
+
+                        socket = new Socket();
+                        socket.connect(new InetSocketAddress((adresse + "." + i).toString(), port), 500);
 
                         publishProgress(i);
 
-                    } catch (IOException e) {
+                    }
+                    catch (InterruptedException e){}
+                    catch (IOException e) {
 
-                        publishProgress(i);
+                        publishProgress(i ,-1);
                     }
                    finally{
                         try {
                             socket.close();
                         }
                         catch (IOException e){}
-
                     }
                 }
 
@@ -91,16 +143,19 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(Integer...values)
         {
+            if(values.length != 2)
+            ( (TextView)findViewById(R.id.adresseView)).append(adresse +"." + values[0] +"\n");
 
-            ( (TextView)findViewById(R.id.adresseView)).append(adresse +"." + values[0] +"\r");
 
-            theBar.setProgress((values[0] * 100) / 150 );
+            theBar.setProgress(((values[0] - Dplage) * 100) / (Fplage - Dplage));
         }
         @Override
         protected void onPostExecute(Void Result)
         {
-
-
+            //theBar.setProgress(0);
+            isStarted = false;
+            Toast thatToast = Toast.makeText(getApplicationContext(), "la Watch est fini!",Toast.LENGTH_LONG);
+            thatToast.show();
         }
 
 
