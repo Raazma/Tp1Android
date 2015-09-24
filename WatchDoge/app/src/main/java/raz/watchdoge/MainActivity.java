@@ -20,7 +20,8 @@ import java.net.SocketAddress;
 import static java.net.InetAddress.*;
 
 public class MainActivity extends AppCompatActivity {
-    String adresse = "206.167.212";
+
+    String adresse ;
     int Dplage;
     int Fplage;
     int port;
@@ -58,11 +59,12 @@ public class MainActivity extends AppCompatActivity {
 
   public  void Start (View v)
     {
-        isSuspended = false;
+        //met la variable isStarted a true et prend les valeurs des champs et par le thread du asynctask
+        isSuspended = false;//la suspension est a false
 
-        if(!isStarted && isValid()) {
+        if(!isStarted && isValid()) {//verifie que le scan n'est pas deja lancer et verifie les champs de texte des entrées
             isStarted = true;
-            ((TextView) findViewById(R.id.adresseView)).setText("");
+            ((TextView) findViewById(R.id.adresseView)).setText("");//set le text de du textView a vide pour effacer le dernier scan
             adresse = ((EditText) findViewById(R.id.sousReseau)).getText().toString();
             Dplage = Integer.parseInt(((EditText) findViewById(R.id.Dplage)).getText().toString());
             Fplage = Integer.parseInt(((EditText) findViewById(R.id.Fplage)).getText().toString());
@@ -75,21 +77,24 @@ public class MainActivity extends AppCompatActivity {
     }
     public void Suspendre(View v)
     {
-
+   //met seulement la boolean de suspension a true
       isSuspended = true;
-
 
     }
     private boolean isValid()
     {
         boolean verif = false;
         try {
-            Integer.parseInt(((EditText) findViewById(R.id.Nport)).getText().toString());
-            if(Integer.parseInt(((EditText) findViewById(R.id.Dplage)).getText().toString()) < Integer.parseInt(((EditText) findViewById(R.id.Fplage)).getText().toString()) && !(((EditText) findViewById(R.id.sousReseau)).getText().toString()).trim().isEmpty()&& !(((EditText) findViewById(R.id.Nport)).getText().toString()).trim().isEmpty() )
-                verif = true;
-            else
-                Toast.makeText(this, "Invalide plage ou Sous Reseau!",Toast.LENGTH_LONG).show();
+            //tente de parser les zone de texte si invalide lance une execption et verifie que la plage de debut est plus petite que la plage de fin et que les zone de texte de son pas vide
+           if( Integer.parseInt(((EditText) findViewById(R.id.Nport)).getText().toString())  > 0 &&Integer.parseInt(((EditText) findViewById(R.id.Nport)).getText().toString()) < 65636) {
+               if (Integer.parseInt(((EditText) findViewById(R.id.Dplage)).getText().toString()) < Integer.parseInt(((EditText) findViewById(R.id.Fplage)).getText().toString()) && !(((EditText) findViewById(R.id.sousReseau)).getText().toString()).trim().isEmpty() && !(((EditText) findViewById(R.id.Nport)).getText().toString()).trim().isEmpty())
+                   verif = true;
+               else
+                   Toast.makeText(this, "Invalide plage ou Sous Reseau!", Toast.LENGTH_LONG).show();// la plage est invalide la plage de depart est plus grande que la plage de fin ou ladresse de sous reseau est vide
 
+           }
+            else
+               Toast.makeText(this, "Invalide plage ou Sous Reseau!", Toast.LENGTH_LONG).show();// la plage est invalide la plage de depart est plus grande que la plage de fin ou ladresse de sous reseau est vide
         }
          catch (NumberFormatException e){
          Toast.makeText(this, "Invalide plage de Réseau ou Invalide port !",Toast.LENGTH_LONG).show();
@@ -103,23 +108,19 @@ public class MainActivity extends AppCompatActivity {
 
 
         Socket socket = null;
-      public  ZeBigCalcul()
-        {
-
-
-
-        }
             @Override
             protected Void doInBackground(Void... params) {
 
+                //boucle a partir de la plage de depart et de la plage de fin si la connection a reussi envoie seulement la valeur du i
+                //si la connection a echouer on envoie le i et -1 pour en informer doInprogress
                 for (int i = Dplage; i <= Fplage; i++) {
                     try {
 
-                        while(isSuspended)
+                        while(isSuspended)//boucle aussi longtemp que la boolean de suspension n'est pas remis a false
                             Thread.sleep(500);
 
                         socket = new Socket();
-                        socket.connect(new InetSocketAddress((adresse + "." + i).toString(), port), 500);
+                        socket.connect(new InetSocketAddress((adresse + "." + i).toString(), port), 500); //tente une connection avec un timeout dune demi seconde
 
                         publishProgress(i);
 
@@ -143,16 +144,17 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(Integer...values)
         {
-            if(values.length != 2)
+            if(values.length != 2) //si je n,au pas recu de -1 jaffiche ladresse la connection a reussi
             ( (TextView)findViewById(R.id.adresseView)).append(adresse +"." + values[0] +"\n");
 
-
+            //active la progression de la progressbar
             theBar.setProgress(((values[0] - Dplage) * 100) / (Fplage - Dplage));
         }
         @Override
         protected void onPostExecute(Void Result)
         {
-            //theBar.setProgress(0);
+            //set les valeur de defaut pouvoir relancer un nouveau Scan
+            theBar.setProgress(0);
             isStarted = false;
             Toast thatToast = Toast.makeText(getApplicationContext(), "la Watch est fini!",Toast.LENGTH_LONG);
             thatToast.show();
